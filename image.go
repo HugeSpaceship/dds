@@ -19,11 +19,14 @@ limitations under the License.
 //
 // It should normally be used by importing it with a blank name, which
 // will cause it to register itself with the image package:
-//  import _ "github.com/lukegb/dds"
+//
+//	import _ "github.com/lukegb/dds"
 package dds
 
 import (
+	"bytes"
 	"fmt"
+	"github.com/mauserzjeh/dxt"
 	"image"
 	"image/color"
 	"io"
@@ -48,8 +51,8 @@ func DecodeConfig(r io.Reader) (image.Config, error) {
 	pf := h.pixelFormat
 	hasAlpha := (pf.flags&pfAlphaPixels == pfAlphaPixels) || (pf.flags&pfAlpha == pfAlpha)
 	hasRGB := (pf.flags&pfFourCC == pfFourCC) || (pf.flags&pfRGB == pfRGB)
-	hasYUV := (pf.flags&pfYUV == pfYUV)
-	hasLuminance := (pf.flags&pfLuminance == pfLuminance)
+	hasYUV := pf.flags&pfYUV == pfYUV
+	hasLuminance := pf.flags&pfLuminance == pfLuminance
 	switch {
 	case hasRGB && pf.rgbBitCount == 32:
 		c.ColorModel = color.RGBAModel
@@ -96,7 +99,7 @@ func (i *img) At(x, y int) color.Color {
 	g := uint8((d & i.h.pixelFormat.gBitMask) >> i.gBit)
 	b := uint8((d & i.h.pixelFormat.bBitMask) >> i.bBit)
 	a := uint8((d & i.h.pixelFormat.aBitMask) >> i.aBit)
-	return color.NRGBA{r, g, b, a}
+	return color.NRGBA{R: r, G: g, B: b, A: a}
 }
 
 func Decode(r io.Reader) (image.Image, error) {
@@ -105,10 +108,18 @@ func Decode(r io.Reader) (image.Image, error) {
 		return nil, err
 	}
 
-	if h.pixelFormat.flags&pfFourCC == pfFourCC {
-		return nil, fmt.Errorf("image data is compressed with %v; compression is unsupported", h.pixelFormat.fourCC)
+	switch h.pixelFormat.fourCC {
+	case compressionTypeNone:
+		return decodeUncompressedDDS(h, r)
+	case compressionTypeDXT1:
+		return decodeDXT1DDS(h, r)
+	default:
+		return nil, fmt.Errorf("unsupported compression format %x", h.pixelFormat.fourCC)
 	}
 
+}
+
+func decodeUncompressedDDS(h header, r io.Reader) (image.Image, error) {
 	if h.pixelFormat.flags != pfAlphaPixels|pfRGB {
 		return nil, fmt.Errorf("unsupported pixel format %x", h.pixelFormat.flags)
 	}
@@ -132,4 +143,19 @@ func Decode(r io.Reader) (image.Image, error) {
 		bBit: lowestSetBit(h.pixelFormat.bBitMask),
 		aBit: lowestSetBit(h.pixelFormat.aBitMask),
 	}, nil
+}
+
+// This is a lazy hack to get dxt1 to work with this library
+func decodeDXT1DDS(h header, r io.Reader) (image.Image, error) {
+	imgBytes, err := io.ReadAll(r)
+	if err != nil {
+		return nil, err
+	}
+
+	rgbaBytes, err := dxt.DecodeDXT1(imgBytes, uint(h.width), uint(h.height))
+	if err != nil {
+		return nil, err
+	}
+
+	return decodeUncompressedDDS(h, bytes.NewReader(rgbaBytes))
 }
