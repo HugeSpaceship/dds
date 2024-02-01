@@ -1,4 +1,4 @@
-module dds
+module github.com/hugespaceship/dds
 
 go 1.21
 

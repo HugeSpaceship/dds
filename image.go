@@ -1,5 +1,6 @@
 /*
 Copyright 2017 Luke Granger-Brown
+Modified for use with HugeSpaceship by Henry Asbridge in 2024
 
 Licensed under the Apache License, Version 2.0 (the "License");
 you may not use this file except in compliance with the License.
@@ -20,7 +21,7 @@ limitations under the License.
 // It should normally be used by importing it with a blank name, which
 // will cause it to register itself with the image package:
 //
-//	import _ "github.com/lukegb/dds"
+//	import _ "github.com/hugespaceship/dds"
 package dds
 
 import (
