@@ -47,8 +47,8 @@ const (
 	headerFlagsPitch      = dPitch
 	headerFlagsLinearSize = dLinearSize
 
-	compressionTypeNone = 827611204
-        compressionTypeDXT1 = 0
+	compressionTypeNone = 0
+	compressionTypeDXT1 = 827611204
 )
 
 type pixelFormat struct {

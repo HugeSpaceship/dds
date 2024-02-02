@@ -25,7 +25,6 @@ limitations under the License.
 package dds
 
 import (
-	"bytes"
 	"fmt"
 	"github.com/mauserzjeh/dxt"
 	"image"
@@ -154,9 +153,10 @@ func decodeDXT1DDS(h header, r io.Reader) (image.Image, error) {
 	}
 
 	rgbaBytes, err := dxt.DecodeDXT1(imgBytes, uint(h.width), uint(h.height))
-	if err != nil {
-		return nil, err
-	}
 
-	return decodeUncompressedDDS(h, bytes.NewReader(rgbaBytes))
+	return &image.RGBA{
+		Pix:    rgbaBytes,
+		Stride: int(4 * h.width),
+		Rect:   image.Rect(0, 0, int(h.width), int(h.height)),
+	}, err
 }
