@@ -109,10 +109,6 @@ func Decode(r io.Reader) (image.Image, error) {
 		return nil, err
 	}
 
-	if h.flags&pfFourCC != pfFourCC {
-
-	}
-
 	switch h.pixelFormat.fourCC {
 	case compressionTypeNone:
 		return decodeUncompressedDDS(h, r)
@@ -150,7 +146,7 @@ func decodeDXT5DDS(h header, r io.Reader) (image.Image, error) {
 }
 
 func decodeUncompressedDDS(h header, r io.Reader) (image.Image, error) {
-	if h.pixelFormat.flags != pfAlphaPixels|pfRGB {
+	if h.pixelFormat.flags&(pfAlphaPixels|pfRGB) != pfAlphaPixels|pfRGB {
 		return nil, fmt.Errorf("unsupported pixel format %x", h.pixelFormat.flags)
 	}
 
