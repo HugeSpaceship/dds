@@ -114,10 +114,35 @@ func Decode(r io.Reader) (image.Image, error) {
 		return decodeUncompressedDDS(h, r)
 	case compressionTypeDXT1:
 		return decodeDXT1DDS(h, r)
+	case compressionTypeDXT5:
+		return decodeDXT5DDS(h, r)
 	default:
 		return nil, fmt.Errorf("unsupported compression format %x", h.pixelFormat.fourCC)
 	}
 
+}
+
+func decodeDXT5DDS(h header, r io.Reader) (image.Image, error) {
+	imgBytes, err := io.ReadAll(r)
+	if err != nil {
+		return nil, err
+	}
+
+	rgbaPixels, err := decompressDxt5(imgBytes, int(h.width), int(h.height))
+	if err != nil {
+		return nil, err
+	}
+
+	rgbaBytes := make([]byte, len(rgbaPixels)*4)
+	for i, pixel := range rgbaPixels {
+		bi := i * 4
+		rgbaBytes[bi] = pixel.R
+		rgbaBytes[bi+1] = pixel.G
+		rgbaBytes[bi+2] = pixel.B
+		rgbaBytes[bi+3] = pixel.A
+	}
+
+	return decodeUncompressedDDS(h, bytes.NewReader(rgbaBytes))
 }
 
 func decodeUncompressedDDS(h header, r io.Reader) (image.Image, error) {
