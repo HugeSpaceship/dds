@@ -103,11 +103,6 @@ func (i *img) At(x, y int) color.Color {
 	return color.NRGBA{R: r, G: g, B: b, A: a}
 }
 
-const (
-	compressionTypeDXT1 = 31545844
-	compressionTypeDXT5 = 35545844
-)
-
 func Decode(r io.Reader) (image.Image, error) {
 	h, err := readHeader(r)
 	if err != nil {
@@ -115,10 +110,12 @@ func Decode(r io.Reader) (image.Image, error) {
 	}
 
 	if h.flags&pfFourCC != pfFourCC {
-		return decodeUncompressedDDS(h, r)
+
 	}
 
 	switch h.pixelFormat.fourCC {
+	case compressionTypeNone:
+		return decodeUncompressedDDS(h, r)
 	case compressionTypeDXT1:
 		return decodeDXT1DDS(h, r)
 	case compressionTypeDXT5:
